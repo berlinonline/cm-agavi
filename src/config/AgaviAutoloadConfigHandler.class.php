@@ -83,7 +83,7 @@ class AgaviAutoloadConfigHandler extends AgaviXmlConfigHandler
 					$file_name = $source_file[0];
 					$class_name = $source_file[1];
 					
-					$data[$class_name] = realpath($file_name);
+					$classes[$class_name] = realpath($file_name);
 				}
 			}
 
