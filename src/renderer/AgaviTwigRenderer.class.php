@@ -87,15 +87,8 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	 */
 	protected function createEngineInstance()
 	{
-		if(!class_exists('Twig_Environment')) {
-			if(!class_exists('Twig_Autoloader')) {
-				require('Twig/Autoloader.php');
-			}
-			Twig_Autoloader::register();
-		}
-		
-		// loader is set in render()
-		return new Twig_Environment(null, (array)$this->getParameter('options', array()));
+	    $loader = new \Twig_Loader_Filesystem(null, AgaviConfig::get('core.template_dir'));
+		return new \Twig_Environment($loader, (array)$this->getParameter('options', array()));
 	}
 
 	/**
@@ -150,12 +143,10 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 			foreach((array)$this->getParameter('template_dirs', array(AgaviConfig::get('core.template_dir'))) as $dir) {
 				$paths[] = $dir;
 			}
-			$twig->setLoader(new Twig_Loader_Filesystem($paths));
+			$twig->setLoader(new \Twig_Loader_Filesystem($paths));
 			$source = $pathinfo['basename'];
 		} else {
-			// a stream template or whatever; either way, it's something Twig can't load directly :S
-			$twig->setLoader(new Twig_Loader_String());
-			$source = file_get_contents($path);
+		    throw new AgaviViewException('Unsupported layer type: '.get_class($layer));
 		}
 		$template = $twig->loadTemplate($source);
 		
