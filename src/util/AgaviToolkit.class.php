@@ -468,6 +468,15 @@ final class AgaviToolkit
 	 */
 	public static function evaluateModuleDirective($moduleName, $directiveNameFragment, $variables = array())
 	{
+	    
+	    /*
+	     * Simple patch to create a new variable named shortActionName to make them available in expandVariables
+	     */
+	    if (isset($variables['actionName']))
+	    {
+            $variables['shortActionName'] = self::extractShortActionName($variables['actionName']);
+	    }
+	      
 		return AgaviToolkit::expandVariables(
 			AgaviToolkit::expandDirectives(
 				AgaviConfig::get(
@@ -482,7 +491,29 @@ final class AgaviToolkit
 		);
 		
 	}
-	
+		
+	/**
+     * Extracts the "shortActionName" from given action name . e.g.:
+     * 
+     * Foo/Bar -> Bar is now the shortActionName
+     *
+     * @param      string The name of the action
+     *
+     * @return     string The final value
+     *
+     * @author     Jan.Schütze <jan.schuetze@exozet.com>
+     * @since      1.0.2
+     */
+    public static function extractShortActionName($longActionName)
+    {   
+        $pos = strrpos($longActionName,'/');
+        if ($pos !== false) {
+            return substr($longActionName, $pos + 1);
+        }   
+
+        return $longActionName;
+    }
+
 	/**
 	 * Counterpart of PHP's parse_url().
 	 * 
