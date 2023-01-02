@@ -35,17 +35,17 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	 *                    other node classes to access/retrieve elements.
 	 */
 	protected $defaultNamespaceUri = '';
-	
+
 	/**
 	 * @var        string XPath prefix of the default namespace defined above.
 	 */
 	protected $defaultNamespacePrefix = '';
-	
+
 	/**
 	 * @var        DOMXPath A DOMXPath instance for this document.
 	 */
 	protected $xpath = null;
-	
+
 	/**
 	 * @var        array A map of DOM classes and extended Agavi implementations.
 	 */
@@ -65,7 +65,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 		'DOMProcessingInstruction' => 'AgaviXmlConfigDomProcessingInstruction',
 		'DOMText'                  => 'AgaviXmlConfigDomText',
 	);
-	
+
 	/**
 	 * The constructor.
 	 * Will auto-register Agavi DOM node classes and create an XPath instance.
@@ -81,14 +81,14 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	public function __construct($version = "1.0", $encoding = "UTF-8")
 	{
 		parent::__construct($version, $encoding);
-		
+
 		foreach($this->nodeClassMap as $domClass => $agaviClass) {
 			$this->registerNodeClass($domClass, $agaviClass);
 		}
-		
+
 		$this->xpath = new DOMXPath($this);
 	}
-	
+
 	/**
 	 * Load XML from a file.
 	 *
@@ -100,13 +100,13 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	 * @author     Noah Fontes <noah.fontes@bitextender.com>
 	 * @since      1.0.0
 	 */
-	public function load($filename, $options = 0)
+	public function load($filename, $options = null)
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
-		
+
 		$result = parent::load($filename, $options);
-		
+
 		if(libxml_get_last_error() !== false) {
 			$errors = array();
 			foreach(libxml_get_errors() as $error) {
@@ -122,18 +122,18 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 				)
 			);
 		}
-		
+
 		libxml_use_internal_errors($luie);
-		
+
 		$this->xpath = new DOMXPath($this);
-		
+
 		if($this->isAgaviConfiguration()) {
 			AgaviXmlConfigParser::registerAgaviNamespaces($this);
 		}
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * Load XML from a string.
 	 *
@@ -145,13 +145,13 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	 * @author     Noah Fontes <noah.fontes@bitextender.com>
 	 * @since      1.0.0
 	 */
-	public function loadXml($source, $options = 0)
+	public function loadXml($source, $options = null)
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
-		
+
 		$result = parent::loadXML($source, $options);
-		
+
 		if(libxml_get_last_error() !== false) {
 			$errors = array();
 			foreach(libxml_get_errors() as $error) {
@@ -167,18 +167,18 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 				)
 			);
 		}
-		
+
 		libxml_use_internal_errors($luie);
-		
+
 		$this->xpath = new DOMXPath($this);
-		
+
 		if($this->isAgaviConfiguration()) {
 			AgaviXmlConfigParser::registerAgaviNamespaces($this);
 		}
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * Substitutes XIncludes in a DOMDocument object.
 	 *
@@ -189,13 +189,13 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	 * @author     Noah Fontes <noah.fontes@bitextender.com>
 	 * @since      1.0.0
 	 */
-	public function xinclude($options = 0)
+	public function xinclude($options = null)
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
-		
+
 		$result = parent::xinclude($options);
-		
+
 		if(libxml_get_last_error() !== false) {
 			$throw = false;
 			$errors = array();
@@ -210,19 +210,19 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 				libxml_use_internal_errors($luie);
 				throw new DOMException(
 					sprintf(
-						'Error%s occurred while resolving XInclude directives: ' . "\n\n%s", 
-						count($errors) > 1 ? 's' : '', 
+						'Error%s occurred while resolving XInclude directives: ' . "\n\n%s",
+						count($errors) > 1 ? 's' : '',
 						implode("\n", $errors)
 					)
 				);
 			}
 		}
-		
+
 		libxml_use_internal_errors($luie);
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * Import a node into the current document.
 	 *
@@ -235,13 +235,13 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	 * @author     Noah Fontes <noah.fontes@bitextender.com>
 	 * @since      1.0.0
 	 */
-	public function importNode(DOMNode $node, $deep)
+	public function importNode(DOMNode $node, $deep = null)
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
-		
+
 		$result = parent::importNode($node, $deep);
-		
+
 		if(libxml_get_last_error() !== false) {
 			$errors = array();
 			foreach(libxml_get_errors() as $error) {
@@ -252,18 +252,18 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 			throw new DOMException(
 				sprintf(
 					'Error%s occurred while importing a new node "%s": ' . "\n\n%s",
-					count($errors) > 1 ? 's' : '', 
+					count($errors) > 1 ? 's' : '',
 					$node->nodeName,
 					implode("\n", $errors)
 				)
 			);
 		}
-		
+
 		libxml_use_internal_errors($luie);
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * Validate a document based on a schema.
 	 *
@@ -278,7 +278,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
-		
+
 		// gotta do the @ to suppress PHP warnings when the schema cannot be loaded or is invalid
 		if(!$result = @parent::schemaValidate($filename)) {
 			$errors = array();
@@ -289,19 +289,19 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 			libxml_use_internal_errors($luie);
 			throw new DOMException(
 				sprintf(
-					'XML Schema validation with "%s" failed due to the following error%s: ' . "\n\n%s", 
-					$filename, 
-					count($errors) > 1 ? 's' : '', 
+					'XML Schema validation with "%s" failed due to the following error%s: ' . "\n\n%s",
+					$filename,
+					count($errors) > 1 ? 's' : '',
 					implode("\n", $errors)
 				)
 			);
 		}
-		
+
 		libxml_use_internal_errors($luie);
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * Validate a document based on a schema.
 	 *
@@ -316,7 +316,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
-		
+
 		// gotta do the @ to suppress PHP warnings when the schema cannot be loaded or is invalid
 		if(!$result = @parent::schemaValidateSource($source)) {
 			$errors = array();
@@ -327,18 +327,18 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 			libxml_use_internal_errors($luie);
 			throw new DOMException(
 				sprintf(
-					'XML Schema validation failed due to the following error%s: ' . "\n\n%s", 
-					count($errors) > 1 ? 's' : '', 
+					'XML Schema validation failed due to the following error%s: ' . "\n\n%s",
+					count($errors) > 1 ? 's' : '',
 					implode("\n", $errors)
 				)
 			);
 		}
-		
+
 		libxml_use_internal_errors($luie);
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * Perform RELAX NG validation on the document.
 	 *
@@ -353,7 +353,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
-		
+
 		// gotta do the @ to suppress PHP warnings when the schema cannot be loaded or is invalid
 		if(!$result = @parent::relaxNGValidate($filename)) {
 			$errors = array();
@@ -366,17 +366,17 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 				sprintf(
 					'RELAX NG validation with "%s" failed due to the following error%s: ' . "\n\n%s",
 					$filename,
-					count($errors) > 1 ? 's' : '', 
+					count($errors) > 1 ? 's' : '',
 					implode("\n", $errors)
 				)
 			);
 		}
-		
+
 		libxml_use_internal_errors($luie);
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * Retrieve the DOMXPath instance that is associated with this document.
 	 *
@@ -389,7 +389,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		return $this->xpath;
 	}
-	
+
 	/**
 	 * Set a default namespace that should be used when accessing elements via
 	 * convenience methods (such as magic get overload for children), and bind it
@@ -405,10 +405,10 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		$this->defaultNamespaceUri = $namespaceUri;
 		$this->defaultNamespacePrefix = $prefix;
-		
+
 		$this->xpath->registerNamespace($prefix, $namespaceUri);
 	}
-	
+
 	/**
 	 * Retrieve the default namespace URI that will be used by node classes, if
 	 * set, to conveniently retrieve child elements etc in some methods.
@@ -422,10 +422,10 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		return $this->defaultNamespaceUri;
 	}
-	
+
 	/**
 	 * Retrieve the default namespace prefix that will be used by node classes, if
-	 * set, to conveniently retrieve child elements etc via XPath. 
+	 * set, to conveniently retrieve child elements etc via XPath.
 	 *
 	 * @return     string A namespace prefix.
 	 *
@@ -436,7 +436,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		return $this->defaultNamespacePrefix;
 	}
-	
+
 	/**
 	 * Check whether or not this is a standard Agavi configuration file, i.e. with
 	 * a <configurations> and <configuration> envelope.
@@ -450,7 +450,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		return AgaviXmlConfigParser::isAgaviConfigurationDocument($this);
 	}
-	
+
 	/**
 	 * Retrieve the namespace of the Agavi envelope.
 	 *
@@ -465,7 +465,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 			return $this->documentElement->namespaceURI;
 		}
 	}
-	
+
 	/**
 	 * Method to retrieve a list of Agavi <configuration> elements regardless of
 	 * their namespace.
@@ -478,20 +478,20 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	public function getConfigurationElements()
 	{
 		$retval = array();
-		
+
 		if($this->isAgaviConfiguration()) {
 			$agaviNs = $this->getAgaviEnvelopeNamespace();
-			
+
 			foreach($this->documentElement->childNodes as $node) {
 				if($node->nodeType == XML_ELEMENT_NODE && $node->localName == 'configuration' && $node->namespaceURI == $agaviNs) {
 					$retval[] = $node;
 				}
 			}
 		}
-		
+
 		return $retval;
 	}
-	
+
 	/**
 	 * Method to retrieve the Agavi <sandbox> element regardless of the namespace.
 	 *
@@ -504,7 +504,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	{
 		if($this->isAgaviConfiguration()) {
 			$agaviNs = $this->getAgaviEnvelopeNamespace();
-			
+
 			foreach($this->documentElement->childNodes as $node) {
 				if($node->nodeType == XML_ELEMENT_NODE && $node->localName == 'sandbox' && $node->namespaceURI == $agaviNs) {
 					return $node;
@@ -513,5 +513,3 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 		}
 	}
 }
-
-?>
