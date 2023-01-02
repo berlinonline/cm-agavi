@@ -182,14 +182,14 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	/**
 	 * Substitutes XIncludes in a DOMDocument object.
 	 *
-	 * @param      int Bitwise OR of the libxml option constants.
+	 * @param      Bitwise OR of the libxml option constants.
 	 *
-	 * @return     int The number of XIncludes in the document.
+	 * @return     The number of XIncludes in the document.
 	 *
 	 * @author     Noah Fontes <noah.fontes@bitextender.com>
 	 * @since      1.0.0
 	 */
-	public function xinclude($options = null)
+	public function xinclude(int $options = 0): int|false
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
@@ -267,20 +267,20 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	/**
 	 * Validate a document based on a schema.
 	 *
-	 * @param      string The path to the schema.
+	 * @param      The path to the schema.
 	 *
-	 * @return     bool True if the validation is successful; false otherwise.
+	 * @return     True if the validation is successful; false otherwise.
 	 *
 	 * @author     Noah Fontes <noah.fontes@bitextender.com>
 	 * @since      1.0.0
 	 */
-	public function schemaValidate($filename)
+	public function schemaValidate(string $filename, int $flags = 0): bool
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
 
 		// gotta do the @ to suppress PHP warnings when the schema cannot be loaded or is invalid
-		if(!$result = @parent::schemaValidate($filename)) {
+		if (!$result = @parent::schemaValidate($filename, $flags)) {
 			$errors = array();
 			foreach(libxml_get_errors() as $error) {
 				$errors[] = sprintf('[%s #%d] Line %d: %s', $error->level == LIBXML_ERR_WARNING ? 'Warning' : ($error->level == LIBXML_ERR_ERROR ? 'Error' : 'Fatal'), $error->code, $error->line, $error->message);
@@ -305,20 +305,20 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	/**
 	 * Validate a document based on a schema.
 	 *
-	 * @param      string A string containing the schema.
+	 * @param      A string containing the schema.
 	 *
-	 * @return     bool True if the validation is successful; false otherwise.
+	 * @return     True if the validation is successful; false otherwise.
 	 *
 	 * @author     Noah Fontes <noah.fontes@bitextender.com>
 	 * @since      1.0.0
 	 */
-	public function schemaValidateSource($source)
+	public function schemaValidateSource(string $source, int $flags = 0): bool
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
 
 		// gotta do the @ to suppress PHP warnings when the schema cannot be loaded or is invalid
-		if(!$result = @parent::schemaValidateSource($source)) {
+		if (!$result = @parent::schemaValidateSource($source, $flags)) {
 			$errors = array();
 			foreach(libxml_get_errors() as $error) {
 				$errors[] = sprintf('[%s #%d] Line %d: %s', $error->level == LIBXML_ERR_WARNING ? 'Warning' : ($error->level == LIBXML_ERR_ERROR ? 'Error' : 'Fatal'), $error->code, $error->line, $error->message);
@@ -342,14 +342,14 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	/**
 	 * Perform RELAX NG validation on the document.
 	 *
-	 * @param      string The path to the schema.
+	 * @param      The path to the schema.
 	 *
-	 * @return     bool True if the validation is successful; false otherwise.
+	 * @return     True if the validation is successful; false otherwise.
 	 *
 	 * @author     Noah Fontes <noah.fontes@bitextender.com>
 	 * @since      1.0.0
 	 */
-	public function relaxNGValidate($filename)
+	public function relaxNGValidate(string $filename): bool
 	{
 		$luie = libxml_use_internal_errors(true);
 		libxml_clear_errors();
