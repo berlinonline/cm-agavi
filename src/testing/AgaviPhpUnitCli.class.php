@@ -13,6 +13,7 @@
 // |   End:                                                                    |
 // +---------------------------------------------------------------------------+
 
+use PHPUnit\TextUI\Command;
 
 /**
  * Main framework class used for running tests on the command line interface.
@@ -26,9 +27,11 @@
  *
  * @since      1.1.0
  */
-class AgaviPhpUnitCli extends PHPUnit_TextUI_Command
+class AgaviPhpUnitCli extends Command
 {
-	
+
+	// protected array $options = [];
+
 	/**
 	 * @author     Dominik del Bondio <dominik.del.bondio@bitextender.com>
 	 * @since      1.1.0
@@ -39,7 +42,7 @@ class AgaviPhpUnitCli extends PHPUnit_TextUI_Command
 		$this->longOptions['include-suite='] = 'handleIncludeSuite';
 		$this->longOptions['exclude-suite='] = 'handleExcludeSuite';
 		$this->longOptions['no-expand-configuration'] = 'handleNoExpandConfiguration';
-		
+
 		$this->arguments['agaviEnvironment'] = !empty($_SERVER['AGAVI_ENVIRONMENT']) ? $_SERVER['AGAVI_ENVIRONMENT'] : 'testing';
 		$this->arguments['agaviIncludeSuites'] = array();
 		$this->arguments['agaviExcludeSuites'] = array();
@@ -58,7 +61,7 @@ class AgaviPhpUnitCli extends PHPUnit_TextUI_Command
 	{
 		$this->arguments['agaviEnvironment'] = $value;
 	}
-	
+
 	/**
 	 * Callback handling the --include-suite command line option.
 	 *
@@ -74,7 +77,7 @@ class AgaviPhpUnitCli extends PHPUnit_TextUI_Command
 			explode(',', $value)
 		);
 	}
-	
+
 	/**
 	 * Callback handling the --exclude-suite command line option.
 	 *
@@ -90,7 +93,7 @@ class AgaviPhpUnitCli extends PHPUnit_TextUI_Command
 			explode(',', $value)
 		);
 	}
-	
+
 	/**
 	 * Callback handling the --no-expand-configuration command line option.
 	 *
@@ -101,8 +104,8 @@ class AgaviPhpUnitCli extends PHPUnit_TextUI_Command
 	{
 		$this->arguments['agaviExpandConfiguration'] = false;
 	}
-	
-	
+
+
 	/**
 	 * Dispatch the test run.
 	 *
@@ -119,14 +122,14 @@ class AgaviPhpUnitCli extends PHPUnit_TextUI_Command
 		$command = new static();
 		return $command->run($argv, $exit);
 	}
-	
+
 	/**
 	 * Show the help message.
 	 *
 	 * @author     Dominik del Bondio <dominik.del.bondio@bitextender.com>
 	 * @since      1.1.0
 	 */
-	protected function showHelp()
+	protected function showHelp(): void
 	{
 		parent::showHelp();
 		echo <<<EOT
@@ -139,9 +142,9 @@ Agavi specific arguments:
                             suites, comma separated.
   --exclude-suite <suites>  run all but suites named <suite>, accepts a list
                             of suites, comma separated.
-  --no-expand-configuration Don't expand configuration variables in the 
+  --no-expand-configuration Don't expand configuration variables in the
                             configuration file
- 
+
 NOTE:
   Unless --no-expand-configuration is given the configuration file given to
   PHPUnit is generated in Agavi's cache directory. So you can't use relative
@@ -154,43 +157,39 @@ EOT;
 
 	/**
 	 * Custom callback for test suite discovery.
-	 * This is called by PHPUnit in the setup process, right after all command line 
+	 * This is called by PHPUnit in the setup process, right after all command line
 	 * arguments have been parsed.
 	 *
 	 * @author     Dominik del Bondio <dominik.del.bondio@bitextender.com>
 	 * @since      1.1.0
 	 */
-	protected function handleCustomTestSuite()
+	protected function handleCustomTestSuite(): void
 	{
+		parent::handleCustomTestSuite();
 		// ensure the bootstrap script doesn't run and bootstraps agavi another time
 		define('AGAVI_TESTING_BOOTSTRAPPED', true);
 		AgaviToolkit::clearCache();
 		$this->bootstrap($this->arguments['agaviEnvironment']);
-		
-		
+
+
 		// use the default configuration only if another configuration was not given as command line argument
 		$defaultConfigPath = AgaviConfig::get('core.testing_dir') . '/config/phpunit.xml';
 		if(empty($this->arguments['configuration']) && is_file($defaultConfigPath)) {
 			$this->arguments['configuration'] = $defaultConfigPath;
 		}
-		
+
 		$this->arguments['configuration'] = $this->expandConfiguration($this->arguments['configuration']);
 
-		if(count($this->options[1]) > 0) {
-			// positional args were given, so the user specified a test or folder on the command line
-			return;
-		}
-		
 		$suites = require(AgaviConfigCache::checkConfig(AgaviConfig::get('core.testing_dir') . '/config/suites.xml'));
-		
+
 		$masterSuite = new AgaviTestSuite('Master');
-		
+
 		if($this->arguments['agaviIncludeSuites']) {
 			foreach($this->arguments['agaviIncludeSuites'] as $name) {
 				if(empty($suites[$name])) {
 					throw new InvalidArgumentException(sprintf('Invalid suite name %1$s.', $name));
 				}
-				
+
 				$masterSuite->addTest(self::createSuite($name, $suites[$name]));
 			}
 		} else {
@@ -200,10 +199,10 @@ EOT;
 				}
 			}
 		}
-		
+
 		$this->arguments['test'] = $masterSuite;
 	}
-	
+
 	/**
 	 * Initialize a suite from the given instructions and add registered tests.
 	 *
@@ -237,7 +236,7 @@ EOT;
 			usort($files, function($a, $b) {
 				return strcmp($a->getPathName(), $b->getPathName());
 			});
-			
+
 			foreach($files as $finfo) {
 				if($finfo->isFile()) {
 					$s->addTestFile($finfo->getPathName());
@@ -252,13 +251,13 @@ EOT;
 		}
 		return $s;
 	}
-	
+
 	/**
 	 * Runs AgaviToolkit::expandDirectives() on all attributes and text nodes of
 	 * the given file and writes a it to a new file in the Agavi cache directory.
 	 *
 	 * @param      string The path to the xml file
-	 * 
+	 *
 	 * @return     string The path to the expanded file
 	 *
 	 * @author     Dominik del Bondio <dominik.del.bondio@bitextender.com>
@@ -269,7 +268,7 @@ EOT;
 		if(!is_readable($file) || !is_file($file)) {
 			return $file;
 		}
-		
+
 		$doc = new DOMDocument();
 		$doc->substituteEntities = true;
 		$doc->load($file);
@@ -282,12 +281,12 @@ EOT;
 		foreach($textNodes as $textNode) {
 			$textNode->nodeValue = AgaviToolkit::expandDirectives($textNode->nodeValue);
 		}
-		
+
 		$translatedFile = AgaviConfigCache::getCacheName($file);
 		AgaviConfigCache::writeCacheFile($file, $translatedFile, $doc->saveXML());
 		return $translatedFile;
 	}
-	
+
 	/**
 	 * Startup the Agavi core
 	 *
@@ -306,20 +305,20 @@ EOT;
 			// env given, but testing.environment is read-only? then we must use that instead and ignore the given setting
 			$environment = AgaviConfig::get('testing.environment');
 		}
-		
+
 		if($environment === null) {
 			// still no env? oh man...
 			throw new Exception('You must supply an environment name to AgaviTesting::bootstrap() or set the name of the default environment to be used for testing in the configuration directive "testing.environment".');
 		}
-		
+
 		// finally set the env to what we're really using now.
 		AgaviConfig::set('testing.environment', $environment, true, true);
-		
+
 		// bootstrap the framework for autoload, config handlers etc.
 		Agavi::bootstrap($environment);
-		
+
 		ini_set('include_path', get_include_path().PATH_SEPARATOR.dirname(__DIR__));
-		
+
 		$GLOBALS['AGAVI_CONFIG'] = AgaviConfig::toArray();
 	}
 }

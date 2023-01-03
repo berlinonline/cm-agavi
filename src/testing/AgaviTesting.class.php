@@ -13,11 +13,16 @@
 // |   End:                                                                    |
 // +---------------------------------------------------------------------------+
 
+use PHPUnit\Framework\TestResult;
+use PHPUnit\Runner\Version;
+use PHPUnit\TextUI\TestRunner;
+use PHPUnit\Util\Filesystem;
+use SebastianBergmann\CodeCoverage\Filter;
 
 /**
- * Main framework class used for autoloading and initial bootstrapping of the 
+ * Main framework class used for autoloading and initial bootstrapping of the
  * Agavi testing environment
- * 
+ *
  * @package    agavi
  * @subpackage testing
  *
@@ -32,10 +37,10 @@
 class AgaviTesting
 {
 	/**
-	 * @var       PHP_CodeCoverage_Filter The code coverage filter for our tests.
+	 * The code coverage filter for our tests.
 	 */
-	public static $codeCoverageFilter = null;
-	
+	public static ?Filter $codeCoverageFilter = null;
+
 	/**
 	 * Get the code coverage filter instance we will use for tests.
 	 * When running PHPUnit 3.5, this will return the singleton instance.
@@ -52,9 +57,9 @@ class AgaviTesting
 	{
 		if(self::$codeCoverageFilter === null) {
 			// PHP_CodeCoverage doesn't expose any version info, we'll have to check if there is a static getInstance method
-			self::$codeCoverageFilter = method_exists('PHP_CodeCoverage_Filter', 'getInstance') ? PHP_CodeCoverage_Filter::getInstance() : new PHP_CodeCoverage_Filter();
+			self::$codeCoverageFilter = new Filter();
 		}
-		
+
 		return self::$codeCoverageFilter;
 	}
 
@@ -79,7 +84,7 @@ class AgaviTesting
 	 * @param      bool  Whether exit() should be called with an appropriate shell
 	 *                   exit status to indicate success or failures/errors.
 	 *
-	 * @return     PHPUnit_Framework_TestResult The PHPUnit result object.
+	 * @return     TestResult The PHPUnit result object.
 	 *
 	 * @author     Felix Gilcher <felix.gilcher@bitextender.com>
 	 * @author     David Zülke <david.zuelke@bitextender.com>
@@ -88,23 +93,23 @@ class AgaviTesting
 	 */
 	public static function dispatch($arguments = array(), $exit = true)
 	{
-		
+
 		$suites = include AgaviConfigCache::checkConfig(AgaviConfig::get('core.testing_dir').'/config/suites.xml');
 		$master_suite = new AgaviTestSuite('Master');
-		
+
 		if(!empty($arguments['include-suite'])) {
-			
+
 			$names = explode(',', $arguments['include-suite']);
 			unset($arguments['include-suite']);
-			
+
 			foreach($names as $name) {
 				if(empty($suites[$name])) {
 					throw new InvalidArgumentException(sprintf('Invalid suite name %1$s.', $name));
 				}
-				
-				$master_suite->addTest(self::createSuite($name, $suites[$name]));		
+
+				$master_suite->addTest(self::createSuite($name, $suites[$name]));
 			}
-				
+
 		} else {
 			$excludes = array();
 			if(!empty($arguments['exclude-suite'])) {
@@ -113,19 +118,19 @@ class AgaviTesting
 			}
 			foreach($suites as $name => $suite) {
 				if(!in_array($name, $excludes)) {
-					$master_suite->addTest(self::createSuite($name, $suite));	
+					$master_suite->addTest(self::createSuite($name, $suite));
 				}
 			}
 		}
-		
-		if(version_compare(PHPUnit_Runner_Version::id(), '3.6', '<')) {
+
+		if(version_compare(Version::id(), '3.6', '<')) {
 			// PHP_CodeCoverage_Filter is a singleton
-			$runner = new PHPUnit_TextUI_TestRunner();
+			$runner = new TestRunner();
 		} else {
 			// PHP_CodeCoverage_Filter instance must be passed to the test runner
-			$runner = new PHPUnit_TextUI_TestRunner(null, self::$codeCoverageFilter);
+			$runner = new TestRunner(null, self::$codeCoverageFilter);
 		}
-		$result = $runner->doRun($master_suite, $arguments);
+		$result = $runner->run($master_suite, $arguments);
 		if($exit) {
 			// bai
 			exit(self::getExitStatus($result));
@@ -134,27 +139,27 @@ class AgaviTesting
 			return $result;
 		}
 	}
-	
+
 	/**
 	 * Compute a shell exit status for the given result.
-	 * Behaves like PHPUnit_TextUI_Command.
+	 * Behaves like PHPUnit\TextUI\Command.
 	 *
-	 * @param      PHPUnit_Framework_TestResult The test result object.
+	 * @param      TestResult The test result object.
 	 *
 	 * @return     int The shell exit code.
 	 * @deprecated 1.1.0 Use AgaviPhpUnitCli
 	 */
-	public static function getExitStatus(PHPUnit_Framework_TestResult $result)
+	public static function getExitStatus(TestResult $result)
 	{
 		if($result->wasSuccessful()) {
-			return PHPUnit_TextUI_TestRunner::SUCCESS_EXIT;
+			return TestRunner::SUCCESS_EXIT;
 		} elseif($result->errorCount()) {
-			return PHPUnit_TextUI_TestRunner::EXCEPTION_EXIT;
+			return TestRunner::EXCEPTION_EXIT;
 		} else {
-			return PHPUnit_TextUI_TestRunner::FAILURE_EXIT;
+			return TestRunner::FAILURE_EXIT;
 		}
 	}
-	
+
 	/**
 	 * Initialize a suite from the given instructions and add registered tests.
 	 *
@@ -167,7 +172,7 @@ class AgaviTesting
 	 * @since      1.0.0
 	 * @deprecated 1.1.0 Use AgaviPhpUnitCli
 	 */
-	protected static function createSuite($name, array $suite) 
+	protected static function createSuite($name, array $suite)
 	{
 		$base = (null == $suite['base']) ? 'tests' : $suite['base'];
 		if(!AgaviToolkit::isPathAbsolute($base)) {
@@ -178,13 +183,13 @@ class AgaviTesting
 			foreach(
 				new RecursiveIteratorIterator(
 					new AgaviRecursiveDirectoryFilterIterator(
-						new RecursiveDirectoryIterator($base), 
-						$suite['includes'], 
+						new RecursiveDirectoryIterator($base),
+						$suite['includes'],
 						$suite['excludes']
-					), 
+					),
 					RecursiveIteratorIterator::CHILD_FIRST
 				) as $finfo) {
-					
+
 				if($finfo->isFile()) {
 					$s->addTestFile($finfo->getPathName());
 				}
@@ -198,12 +203,12 @@ class AgaviTesting
 		}
 		return $s;
 	}
-	
+
 	/**
 	 * Handles the commandline arguments passed.
-	 * 
+	 *
 	 * @return     array the commandline arguments
-	 * 
+	 *
 	 * @author     Felix Gilcher <felix.gilcher@bitextender.com>
 	 * @since      1.0.0
 	 * @deprecated 1.1.0 Use AgaviPhpUnitCli
@@ -228,106 +233,101 @@ class AgaviTesting
 			'include-suite=',
 			'exclude-suite=',
 		);
-		
-		try {
-			$options = PHPUnit_Util_Getopt::getopt(
-				$_SERVER['argv'],
-				'd:',
-				$longOptions
-			);
-		} catch(RuntimeException $e) {
-			PHPUnit_TextUI_TestRunner::showError($e->getMessage());
+
+		$options = getopt(
+			'd:',
+			$longOptions
+		);
+
+		if (! is_array($options)) {
+			self::showHelp();
+			exit(1);
 		}
-		
-		$arguments = array(); 
-		
-		foreach($options[0] as $option) {
-			switch($option[0]) {
+
+		$arguments = array();
+
+		foreach($options as $opt => $val) {
+			switch($opt) {
 				case '--configuration':
-					$arguments['configuration'] = $option[1];
+					$arguments['configuration'] = $val;
 					break;
-				
+
 				case '--coverage-clover':
-				case '--coverage-xml': 
+				case '--coverage-xml':
 					if(self::checkCodeCoverageDeps()) {
-						$arguments['coverageClover'] = $option[1];
+						$arguments['coverageClover'] = $val;
 					}
 					break;
-				
-				case '--coverage-source': 
+
+				case '--coverage-source':
 					if(self::checkCodeCoverageDeps()) {
-						$arguments['coverageSource'] = $option[1];
+						$arguments['coverageSource'] = $val;
 					}
 					break;
-				
+
 				case '--coverage-html':
-				case '--report': 
+				case '--report':
 					if(self::checkCodeCoverageDeps()) {
-						$arguments['reportDirectory'] = $option[1];
+						$arguments['reportDirectory'] = $val;
 					}
 					break;
-				
+
 				case '--environment':
-					$arguments['environment'] = $option[1];
+					$arguments['environment'] = $val;
 					break;
-				
+
 				case '--help':
 					self::showHelp();
-					exit(PHPUnit_TextUI_TestRunner::SUCCESS_EXIT);
+					exit(TestRunner::SUCCESS_EXIT);
 					break;
-				
+
 				case '--log-json':
-					$arguments['jsonLogfile'] = $option[1];
+					$arguments['jsonLogfile'] = $val;
 					break;
-				
+
 				case '--log-graphviz':
-					if(PHPUnit_Util_Filesystem::fileExistsInIncludePath('Image/GraphViz.php')) {
-						$arguments['graphvizLogfile'] = $option[1];
-					} else {
-						throw new AgaviException('The Image_GraphViz package is not installed.');
-					}
-					break;
-				
+					throw new AgaviException('The Image_GraphViz package is not supported.');
+
 				case '--log-tap':
-					$arguments['tapLogfile'] = $option[1];
+					$arguments['tapLogfile'] = $val;
 					break;
-				
+
 				case '--log-xml':
-					$arguments['xmlLogfile'] = $option[1];
+					$arguments['xmlLogfile'] = $val;
 				break;
-				
+
 				case '--log-pmd':
 					if(self::checkCodeCoverageDeps()) {
-						$arguments['pmdXML'] = $option[1];
+						$arguments['pmdXML'] = $val;
 					}
 					break;
-				
+
 				case '--log-metrics':
 					if(self::checkCodeCoverageDeps()) {
-						$arguments['metricsXML'] = $option[1];
+						$arguments['metricsXML'] = $val;
 					}
 					break;
-				
+
 				case '--include-suite':
-					$arguments['include-suite'] = $option[1];
+					$arguments['include-suite'] = $val;
 					break;
-				
+
 				case '--exclude-suite':
-					$arguments['exclude-suite'] = $option[1];
+					$arguments['exclude-suite'] = $val;
 					break;
 			}
 		}
-		
+
 		return $arguments;
 	}
-	
+
 	/**
 	 * Checks whether all dependencies for writing code coverage information
-	 * are met. 
-	 * 
+	 * are met.
+	 *
 	 * @return     true if all deps are met
 	 * @throws     AgaviExecption if a dependency is missing
-	 * 
+	 *
 	 * @author     Felix Gilcher <felix.gilcher@bitextender.com>
 	 * @since      1.0.0
 	 * @deprecated 1.1.0 Use AgaviPhpUnitCli
@@ -343,20 +343,19 @@ class AgaviTesting
 				throw new AgaviException('The Xdebug extension is not loaded.');
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	/**
 	 * shows the help for the commandline call
-	 * 
+	 *
 	 * @author     Felix Gilcher <felix.gilcher@bitextender.com>
 	 * @since      1.0.0
 	 * @deprecated 1.1.0 Use AgaviPhpUnitCli
 	 */
 	protected static function showHelp()
 	{
-		PHPUnit_TextUI_TestRunner::printVersionString();
 
 		print <<<EOT
 Usage: run-tests.php [switches]
