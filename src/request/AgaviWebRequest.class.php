@@ -35,9 +35,9 @@ class AgaviWebRequest extends AgaviRequest
 {
 	/**
 	 * @var        string The protocol information of this request.
-	 */ 
+	 */
 	protected $protocol = null;
-	
+
 	/**
 	 * @var        string The current URL scheme.
 	 */
@@ -251,7 +251,7 @@ class AgaviWebRequest extends AgaviRequest
 		// http://trac.agavi.org/ticket/953
 		// http://trac.agavi.org/ticket/944
 		// http://bugs.php.net/bug.php?id=41093
-		
+
 		$retval = array();
 
 		foreach($input as $key => $value) {
@@ -286,24 +286,6 @@ class AgaviWebRequest extends AgaviRequest
 	{
 		parent::initialize($context, $parameters);
 
-		$rla = ini_get('register_long_arrays');
-
-		// very first thing to do: remove magic quotes
-		if(get_magic_quotes_gpc()) {
-			trigger_error('Support for php.ini directive "magic_quotes_gpc" is deprecated and will be dropped in Agavi 1.2. The setting is deprecated in PHP 5.3 and will be removed in PHP 5.4. Please refer to the PHP manual for details.', E_USER_DEPRECATED);
-			$_GET = self::clearMagicQuotes($_GET);
-			$_POST = self::clearMagicQuotes($_POST);
-			$_COOKIE = self::clearMagicQuotes($_COOKIE);
-			$_REQUEST = self::clearMagicQuotes($_REQUEST);
-			$_FILES = self::clearMagicQuotes($_FILES);
-			if($rla) {
-				$GLOBALS['HTTP_GET_VARS'] = $_GET;
-				$GLOBALS['HTTP_POST_VARS'] = $_POST;
-				$GLOBALS['HTTP_COOKIE_VARS'] = $_COOKIE;
-				$GLOBALS['HTTP_POST_FILES'] = $_FILES;
-			}
-		}
-
 		$sources = array_merge(array(
 			'HTTPS' => 'HTTPS',
 			'REQUEST_METHOD' => 'REQUEST_METHOD',
@@ -337,9 +319,9 @@ class AgaviWebRequest extends AgaviRequest
 		// map REQUEST_METHOD value to a method name, or fall back to the default in $sourceDefaults.
 		// if someone set a static value as default for a source that does not have a mapping, then he's really asking for it, and thus out of luck
 		$this->setMethod($this->getParameter(sprintf('method_names[%s]', $REQUEST_METHOD), $this->getParameter(sprintf('method_names[%s]', $sourceDefaults['REQUEST_METHOD']))));
-		
+
 		$this->protocol = self::getSourceValue($sources['SERVER_PROTOCOL'], $sourceDefaults['SERVER_PROTOCOL']);
-		
+
 		// "on" (e.g. Apache or IIS) or "https" (e.g. Amazon EC2 Elastic Load Balancer) or "1" or integer 1 or true (e.g. statically set from a config file)
 		$HTTPS = (bool)preg_match('/^(on|https|1)$/i', self::getSourceValue($sources['HTTPS'], $sourceDefaults['HTTPS']));
 
@@ -356,7 +338,7 @@ class AgaviWebRequest extends AgaviRequest
 		}
 
 		$_SERVER['SERVER_SOFTWARE'] = self::getSourceValue($sources['SERVER_SOFTWARE'], $sourceDefaults['SERVER_SOFTWARE']);
-		
+
 		if(isset($_SERVER['SERVER_SOFTWARE']) && preg_match('#^Apache(/\d+(\.\d+)?)?\.?$#', $_SERVER['SERVER_SOFTWARE'])) {
 			throw new AgaviException(
 				"You are running the Apache HTTP Server with a 'ServerTokens' configuration directive value of 'Minor' or lower.\n" .
@@ -411,10 +393,7 @@ class AgaviWebRequest extends AgaviRequest
 			array('%20', '%22', '%27', '%3C', '%3E', '%60', /*'%26'*/),
 			array($this->requestUri, $_SERVER['REQUEST_URI'])
 		);
-		if($rla) {
-			$GLOBALS['HTTP_SERVER_VARS']['REQUEST_URI'] = $this->getRequestUri();
-		}
-		
+
 		// 'scheme://authority' is necessary so parse_url doesn't stumble over '://' in the request URI
 		$parts = array_merge(array('path' => '', 'query' => ''), parse_url('scheme://authority' . $this->getRequestUri()));
 		$this->urlPath = $parts['path'];
@@ -429,9 +408,6 @@ class AgaviWebRequest extends AgaviRequest
 			if(isset($_SERVER['CONTENT_TYPE']) && $this->getParameter('http_put_decode_urlencoded', true) && preg_match('#^application/x-www-form-urlencoded(;[^;]+)*?$#', $_SERVER['CONTENT_TYPE'])) {
 				// urlencoded data was sent, we can decode that
 				parse_str(file_get_contents('php://input'), $_POST);
-				if(function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
-					$_POST = self::clearMagicQuotes($_POST);
-				}
 			} else {
 				// some other data via PUT. we need to populate $_FILES manually
 				$httpBody = file_get_contents('php://input');
@@ -534,7 +510,7 @@ class AgaviWebRequest extends AgaviRequest
 			$data = new $uploadedFileClass($data);
 			AgaviArrayPathDefinition::setValue($index, $output, $data);
 		}
-		
+
 		return $output;
 	}
 
@@ -549,24 +525,15 @@ class AgaviWebRequest extends AgaviRequest
 	public function startup()
 	{
 		parent::startup();
-		
+
 		if($this->getParameter('unset_input', true)) {
-			$rla = ini_get('register_long_arrays');
-			
+
 			$_GET = $_POST = $_COOKIE = $_REQUEST = $_FILES = array();
-			if($rla) {
-				// clean long arrays, too!
-				$GLOBALS['HTTP_GET_VARS'] = $GLOBALS['HTTP_POST_VARS'] = $GLOBALS['HTTP_COOKIE_VARS'] = $GLOBALS['HTTP_POST_FILES'] = array();
-			}
-			
+
 			foreach($_SERVER as $key => $value) {
 				if(substr($key, 0, 5) == 'HTTP_' || $key == 'CONTENT_TYPE' || $key == 'CONTENT_LENGTH') {
 					unset($_SERVER[$key]);
 					unset($_ENV[$key]);
-					if($rla) {
-						unset($GLOBALS['HTTP_SERVER_VARS'][$key]);
-						unset($GLOBALS['HTTP_ENV_VARS'][$key]);
-					}
 				}
 			}
 		}

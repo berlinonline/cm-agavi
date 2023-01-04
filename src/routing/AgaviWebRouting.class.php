@@ -81,7 +81,7 @@ class AgaviWebRouting extends AgaviRouting
 			// fragment identifier (#foo)
 			'fragment' => null,
 		));
-		
+
 		$this->argSeparatorInput = str_split(ini_get('arg_separator.input'));
 		$this->argSeparatorOutput = ini_get('arg_separator.output');
 	}
@@ -136,7 +136,7 @@ class AgaviWebRouting extends AgaviRouting
 
 			if(isset($_SERVER['SERVER_SOFTWARE']) && strpos($_SERVER['SERVER_SOFTWARE'], 'Apache/2') !== false) {
 				$sru = $_SERVER['REQUEST_URI'];
-				
+
 				if(($fqmp = strpos($sru, '?')) !== false && ($fqmp == strlen($sru)-1)) {
 					// strip a trailing question mark, but only if it really is the query string separator (i.e. the only question mark in the URI)
 					$sru = substr($sru, 0, -1);
@@ -144,7 +144,7 @@ class AgaviWebRouting extends AgaviRouting
 					// if there is a trailing ampersand (in query string or path, whatever ends the URL), strip it (but just one)
 					$sru = preg_replace('/&$/D', '', $sru);
 				}
-				
+
 				// multiple consecutive slashes got lost in our input thanks to an apache bug
 				// let's fix that
 				$cqs = preg_replace('#/{2,}#', '/', rawurldecode($ru['query']));
@@ -168,10 +168,6 @@ class AgaviWebRouting extends AgaviRouting
 			$parsedRuQuery = $parsedInput = '';
 			parse_str($ru['query'], $parsedRuQuery);
 			parse_str($this->input, $parsedInput);
-			if(get_magic_quotes_gpc()) {
-				$parsedRuQuery = AgaviWebRequest::clearMagicQuotes($parsedRuQuery);
-				$parsedInput = AgaviWebRequest::clearMagicQuotes($parsedInput, false /* start on the first level */);
-			}
 			foreach(array_diff(array_keys($parsedInput), array_keys($parsedRuQuery)) as $unset) {
 				// our element is in $_GET
 				unset($_GET[$unset]);
@@ -239,7 +235,7 @@ class AgaviWebRouting extends AgaviRouting
 	{
 		return $this->baseHref;
 	}
-	
+
 	/**
 	 * Generate a formatted Agavi URL.
 	 *
@@ -286,7 +282,7 @@ class AgaviWebRouting extends AgaviRouting
 				$append = '';
 
 				list($path, $usedParams, $options, $extraParams, $isNullRoute) = parent::gen($route, $params, $options);
-				
+
 				if($isNullRoute) {
 					// add the incoming parameters from the request uri for gen(null) and friends
 					$extraParams = array_merge($this->inputParameters, $extraParams);
@@ -337,12 +333,12 @@ class AgaviWebRouting extends AgaviRouting
 
 				$params = array_merge($defaults, $params);
 			}
-			
+
 			if(!isset($path)) {
 				// the route does not exist. we generate a normal index.php?foo=bar URL.
 				$path = $_SERVER['SCRIPT_NAME'];
 			}
-			
+
 			if(!isset($path)) {
 				// routing was off; the name of the route is the input
 			}
@@ -408,7 +404,7 @@ class AgaviWebRouting extends AgaviRouting
 				// given scheme plus "://"
 				$scheme = $scheme . '://';
 			}
-			
+
 			$retval = $scheme . $authority . $retval;
 		}
 
