@@ -13,6 +13,9 @@
 // |   End:                                                                    |
 // +---------------------------------------------------------------------------+
 
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
+
 /**
  * A renderer produces the output as defined by a View
  *
@@ -54,7 +57,7 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 		unset($keys[array_search('twig', $keys)]);
 		return $keys;
 	}
-	
+
 	/**
 	 * Initialize this Renderer.
 	 *
@@ -67,7 +70,7 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	public function initialize(AgaviContext $context, array $parameters = array())
 	{
 		parent::initialize($context, $parameters);
-		
+
 		$this->setParameter('options', array_merge(
 			array(
 				'debug' => AgaviConfig::get('core.debug'),
@@ -76,7 +79,7 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 			(array)$this->getParameter('options', array())
 		));
 	}
-	
+
 	/**
 	 * Load and create an instance of Twig.
 	 *
@@ -87,8 +90,8 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	 */
 	protected function createEngineInstance()
 	{
-	    $loader = new \Twig_Loader_Filesystem(null, AgaviConfig::get('core.template_dir'));
-		return new \Twig_Environment($loader, (array)$this->getParameter('options', array()));
+	    $loader = new FilesystemLoader(null, AgaviConfig::get('core.template_dir'));
+		return new Environment($loader, (array)$this->getParameter('options', array()));
 	}
 
 	/**
@@ -103,13 +106,13 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	{
 		if(!$this->twig) {
 			$this->twig = $this->createEngineInstance();
-			
+
 			// assigns can be set as globals
 			foreach($this->assigns as $key => $getter) {
 				$this->twig->addGlobal($key, $this->context->$getter());
 			}
 		}
-		
+
 		return $this->twig;
 	}
 
@@ -129,7 +132,7 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	public function render(AgaviTemplateLayer $layer, array &$attributes = array(), array &$slots = array(), array &$moreAssigns = array())
 	{
 		$twig = $this->getEngine();
-		
+
 		$path = $layer->getResourceStreamIdentifier();
 		if($layer instanceof AgaviFileTemplateLayer) {
 			$pathinfo = pathinfo($path);
@@ -143,15 +146,15 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 			foreach((array)$this->getParameter('template_dirs', array(AgaviConfig::get('core.template_dir'))) as $dir) {
 				$paths[] = $dir;
 			}
-			$twig->setLoader(new \Twig_Loader_Filesystem($paths));
+			$twig->setLoader(new FilesystemLoader($paths));
 			$source = $pathinfo['basename'];
 		} else {
 		    throw new AgaviViewException('Unsupported layer type: '.get_class($layer));
 		}
 		$template = $twig->loadTemplate($source);
-		
+
 		$data = array();
-		
+
 		// template vars
 		if($this->extractVars) {
 			foreach($attributes as $name => $value) {
@@ -160,18 +163,16 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 		} else {
 			$data[$this->varName] = $attributes;
 		}
-		
+
 		// slots
 		$data[$this->slotsVarName] = $slots;
-		
+
 		// dynamic assigns (global ones were set in getEngine())
 		$finalMoreAssigns = self::buildMoreAssigns($moreAssigns, $this->moreAssignNames);
 		foreach($finalMoreAssigns as $key => $value) {
 			$data[$key] = $value;
 		}
-		
+
 		return $template->render($data);
 	}
 }
-
-?>
