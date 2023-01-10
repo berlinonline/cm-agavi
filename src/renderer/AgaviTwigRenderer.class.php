@@ -33,9 +33,9 @@ use Twig\Loader\FilesystemLoader;
 class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 {
 	/**
-	 * @var        Twig_Environment The template engine.
+	 * The template engine.
 	 */
-	protected $twig = null;
+	protected Environment $twig;
 
 	/**
 	 * @var        string A string with the default template file extension,
@@ -83,12 +83,10 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	/**
 	 * Load and create an instance of Twig.
 	 *
-	 * @return     Twig_Environment
-	 *
 	 * @author     David Zülke <david.zuelke@bitextender.com>
 	 * @since      1.0.6
 	 */
-	protected function createEngineInstance()
+	protected function createEngineInstance(): Environment
 	{
 	    $loader = new FilesystemLoader(null, AgaviConfig::get('core.template_dir'));
 		return new Environment($loader, (array)$this->getParameter('options', array()));
@@ -97,12 +95,10 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	/**
 	 * Grab an initialized Twig instance.
 	 *
-	 * @return     Twig_Environment
-	 *
 	 * @author     David Zülke <david.zuelke@bitextender.com>
 	 * @since      1.0.6
 	 */
-	protected function getEngine()
+	protected function getEngine(): Environment
 	{
 		if(!$this->twig) {
 			$this->twig = $this->createEngineInstance();
@@ -151,7 +147,6 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 		} else {
 		    throw new AgaviViewException('Unsupported layer type: '.get_class($layer));
 		}
-		$template = $twig->loadTemplate($source);
 
 		$data = array();
 
@@ -173,6 +168,6 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 			$data[$key] = $value;
 		}
 
-		return $template->render($data);
+		return $twig->render($source, $data);
 	}
 }
