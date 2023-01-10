@@ -88,7 +88,7 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	 */
 	protected function createEngineInstance(): Environment
 	{
-	    $loader = new FilesystemLoader(null, AgaviConfig::get('core.template_dir'));
+		$loader = new FilesystemLoader(null, AgaviConfig::get('core.template_dir'));
 		return new Environment($loader, (array)$this->getParameter('options', array()));
 	}
 
@@ -100,11 +100,11 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 	 */
 	protected function getEngine(): Environment
 	{
-		if(!$this->twig) {
+		if (!isset($this->twig)) {
 			$this->twig = $this->createEngineInstance();
 
 			// assigns can be set as globals
-			foreach($this->assigns as $key => $getter) {
+			foreach ($this->assigns as $key => $getter) {
 				$this->twig->addGlobal($key, $this->context->$getter());
 			}
 		}
@@ -130,7 +130,7 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 		$twig = $this->getEngine();
 
 		$path = $layer->getResourceStreamIdentifier();
-		if($layer instanceof AgaviFileTemplateLayer) {
+		if ($layer instanceof AgaviFileTemplateLayer) {
 			$pathinfo = pathinfo($path);
 			// set the directory the template is in as the first path to load from, and the directory set on the layer second
 			// that way, including another template inside this template will look at e.g. a locale subdirectory first before falling back to the originally defined folder
@@ -139,20 +139,20 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 				$layer->getParameter('directory'),
 			);
 			// also allow loading from the main template dir by default, and any other directories the user has set through configuration
-			foreach((array)$this->getParameter('template_dirs', array(AgaviConfig::get('core.template_dir'))) as $dir) {
+			foreach ((array)$this->getParameter('template_dirs', array(AgaviConfig::get('core.template_dir'))) as $dir) {
 				$paths[] = $dir;
 			}
 			$twig->setLoader(new FilesystemLoader($paths));
 			$source = $pathinfo['basename'];
 		} else {
-		    throw new AgaviViewException('Unsupported layer type: '.get_class($layer));
+			throw new AgaviViewException('Unsupported layer type: ' . get_class($layer));
 		}
 
 		$data = array();
 
 		// template vars
-		if($this->extractVars) {
-			foreach($attributes as $name => $value) {
+		if ($this->extractVars) {
+			foreach ($attributes as $name => $value) {
 				$data[$name] = $value;
 			}
 		} else {
@@ -164,7 +164,7 @@ class AgaviTwigRenderer extends AgaviRenderer implements AgaviIReusableRenderer
 
 		// dynamic assigns (global ones were set in getEngine())
 		$finalMoreAssigns = self::buildMoreAssigns($moreAssigns, $this->moreAssignNames);
-		foreach($finalMoreAssigns as $key => $value) {
+		foreach ($finalMoreAssigns as $key => $value) {
 			$data[$key] = $value;
 		}
 
