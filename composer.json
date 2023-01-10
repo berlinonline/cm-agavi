@@ -17,13 +17,13 @@
 		"irc": "irc://irc.freenode.org/agavi"
 	},
 	"require": {
-		"php": ">=5.2.0",
+		"php": ">=7.4",
 		"ext-dom": "*",
 		"lib-libxml": "*",
 		"ext-spl": "*",
 		"ext-reflection": "*",
 		"ext-pcre": "*",
-		"phing/phing": "~2.6.1",
+		"phing/phing": "^2.17",
 		"twig/twig": "^3.5"
 	},
 	"require-dev": {
