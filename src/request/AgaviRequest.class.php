@@ -195,17 +195,11 @@ abstract class AgaviRequest extends AgaviAttributeHolder
 				if(isset($GLOBALS['argc'])) {
 					$GLOBALS['argc'] = 0;
 				}
-				if($rla) {
-					$GLOBALS['HTTP_SERVER_VARS']['argc'] = 0;
-				}
 			}
 			if(isset($_SERVER['argv'])) {
 				$_SERVER['argv'] = array();
 				if(isset($GLOBALS['argv'])) {
 					$GLOBALS['argv'] = array();
-				}
-				if($rla) {
-					$GLOBALS['HTTP_SERVER_VARS']['argv'] = array();
 				}
 			}
 		}
