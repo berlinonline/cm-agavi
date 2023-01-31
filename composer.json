@@ -47,7 +47,9 @@
 		"ext-iconv": "Enable iconv if you need to convert between other charset than iso-8859-1 and utf-8"
 	},
 	"autoload": {
-		"files": ["src/composerInit.php"]
+		"classmap": [
+			"src/"
+		]
 	},
 	"bin": ["etc/composer/bin/agavi"],
 	"scripts": {
