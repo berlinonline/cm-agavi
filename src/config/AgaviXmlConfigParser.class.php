@@ -497,43 +497,42 @@ class AgaviXmlConfigParser
 	{
 		// expand directives, resolve globs and encode paths in XInclude href attributes
 		$elements = $document->getElementsByTagNameNS(self::NAMESPACE_XINCLUDE_2001, 'include');
-		$length = $elements->length;
-		// we can't foreach() over the DOMNodeList as we're modifying it further below
-		// see http://php.net/manual/en/class.domnodelist.php#83178
-		for($i = 0; $i < $length; $i++) {
-			$element = $elements->item($i);
-			if($element->hasAttribute('href')) {
+		foreach ($elements->getIterator() as $element) {
+			if ($element->hasAttribute('href')) {
 				$attribute = $element->getAttributeNode('href');
 				$parts = explode('#', $attribute->nodeValue, 2);
 				$parts[0] = str_replace('\\', '/', AgaviToolkit::expandDirectives($parts[0]));
-				$attribute->nodeValue = rawurlencode($parts[0]) . (isset($parts[1]) ? '#' . $parts[1] : '');
-				if(strpos($parts[0], '*') !== false || strpos($parts[0], '{') !== false) {
+				$attribute->nodeValue = $parts[0] . (isset($parts[1]) ? '#' . $parts[1] : '');
+				if (strpos($parts[0], '*') !== false || strpos($parts[0], '{') !== false) {
 					$glob = glob($parts[0], GLOB_BRACE);
-					if($glob) {
+					if ($glob) {
 						$glob = array_unique($glob); // it could be that someone used /path/to/{Foo,*}/burp.xml so Foo would come before all others, that's why we need to remove duplicates as the * would match Foo again
-						foreach($glob as $path) {
+						foreach ($glob as $path) {
 							$new = $element->cloneNode(true);
-							$new->setAttribute('href', rawurlencode($path) . (isset($parts[1]) ? '#' . $parts[1] : ''));
+							$new->setAttribute('href', $path . (isset($parts[1]) ? '#' . $parts[1] : ''));
 							$element->parentNode->insertBefore($new, $element);
-							++$i;
 						}
 						$element->parentNode->removeChild($element);
 					}
 				}
 			}
 		}
-		
-		// perform xincludes
-		try {
-			$document->xinclude();
-		} catch(DOMException $dome) {
-			throw new AgaviParseException(sprintf('Configuration file "%s" could not be parsed: %s', $document->documentURI, $dome->getMessage()), 0, $dome);
+
+		if ($elements->count() > 0) {
+			// perform xincludes
+			try {
+				$document->xinclude();
+			} catch (DOMException $dome) {
+				throw new AgaviParseException(sprintf('Configuration file "%s" could not be parsed: %s', $document->documentURI, $dome->getMessage()), 0, $dome);
+			}
 		}
-		
+
 		// remove all xml:base attributes inserted by XIncludes
 		$nodes = $document->getXpath()->query('//@xml:base', $document);
-		foreach($nodes as $node) {
-			$node->ownerElement->removeAttributeNode($node);
+		foreach ($nodes->getIterator() as $node) {
+			if ($node instanceof \DOMAttr) {
+				$node->ownerElement->removeAttributeNode($node);
+			}
 		}
 	}
 	

@@ -44,7 +44,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	/**
 	 * @var        DOMXPath A DOMXPath instance for this document.
 	 */
-	protected $xpath = null;
+	protected DOMXPath $xpath;
 
 	/**
 	 * @var        array A map of DOM classes and extended Agavi implementations.
@@ -385,7 +385,7 @@ class AgaviXmlConfigDomDocument extends DOMDocument
 	 * @author     David Zülke <dz@bitxtender.com>
 	 * @since      1.0.0
 	 */
-	public function getXpath()
+	public function getXpath(): DOMXPath
 	{
 		return $this->xpath;
 	}
